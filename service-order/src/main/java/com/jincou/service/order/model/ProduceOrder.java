@@ -25,6 +25,11 @@ public class ProduceOrder implements Serializable {
     private Integer orderId;
 
     /**
+     * 商品Id
+     */
+    private Integer produceId;
+
+    /**
      * 商品名称
      */
     private String produceName;
@@ -53,4 +58,9 @@ public class ProduceOrder implements Serializable {
      * 用户名
      */
     private String userName;
+
+    /**
+     * 商品数量
+     */
+    private Integer total;
 }

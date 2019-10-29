@@ -1,6 +1,8 @@
 package com.jincou.service.order.service;
 
 
+import com.jincou.service.order.model.ProduceOrder;
+
 /**
  * @Description: 订单业务类
  *
@@ -14,4 +16,11 @@ public interface ProduceOrderService {
       * @author xub
       */
      int save(int userId, int produceId, int total);
+
+     /**
+      * 下单
+      * @param order
+      * @return
+      */
+     int saveOrder(ProduceOrder order);
 }

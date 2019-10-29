@@ -2,6 +2,8 @@ package com.jincou.service.order.mqservice;
 
 import com.alibaba.fastjson.JSONObject;
 import com.jincou.service.order.config.Jms;
+import com.jincou.service.order.model.OrderRequestVo;
+import com.jincou.service.order.model.ProduceOrder;
 import com.jincou.service.order.service.ProduceOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -13,6 +15,7 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.*;
 
 
@@ -108,7 +111,9 @@ class TransactionListenerImpl implements TransactionListener {
         JSONObject jsonObject = JSONObject.parseObject(message);
         Integer productId = jsonObject.getInteger("productId");
         Integer total = jsonObject.getInteger("total");
-        int userId = Integer.parseInt(arg.toString());
+        OrderRequestVo requestVo = (OrderRequestVo) arg;
+        ProduceOrder param = (ProduceOrder) requestVo.getParam();
+        int userId = param.getUserId();
         //模拟执行本地事务begin=======
         /**
          * 本地事务执行会有三种可能
@@ -117,7 +122,18 @@ class TransactionListenerImpl implements TransactionListener {
          * 3、网络等原因服务宕机收不到返回结果
          */
         log.info("本地事务执行参数,用户id={},商品ID={},销售库存={}",userId,productId,total);
-        int result = produceOrderService.save(userId, productId, total);
+        int result = -1;
+        try {
+
+            Class <? extends ProduceOrderService> orderServiceClass = produceOrderService.getClass();
+            Method save = orderServiceClass.getMethod(requestVo.getMethod(),param.getClass());
+            result = (int) save.invoke(produceOrderService,param);
+            System.out.println(result);
+        } catch (Exception e) {
+            log.error("本地事务执行异常："+e);
+            return LocalTransactionState.ROLLBACK_MESSAGE;
+        }
+//        int result = produceOrderService.save(userId, productId, total);
         //模拟执行本地事务end========
         //TODO 实际开发下面不需要我们手动返回，而是根据本地事务执行结果自动返回
         //1、二次确认消息，然后消费者可以消费
